@@ -1371,6 +1371,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18ddc4c09bf2f274da4f15bd514c98b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  usernameInput: {fileID: 1767834421}
+  passwordInput: {fileID: 364878807}
+  feedbackText: {fileID: 0}
+  leaderboardText: {fileID: 0}
 --- !u!4 &1009026065
 Transform:
   m_ObjectHideFlags: 0
