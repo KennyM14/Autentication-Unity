@@ -3,45 +3,58 @@ using UnityEngine;
 
 public class ObjectPool : MonoBehaviour
 {
-    public static ObjectPool Instance;
-    public GameObject prefab;
-    public int poolSize = 10;
+    public GameObject obstaclePrefab;
+    public int poolSize = 8;
+    public float spawnRate = 2f;
+    public float minY = -2f, maxY = 2f;
 
-    private Queue<GameObject> pool = new Queue<GameObject>();
-
-    void Awake()
-    {
-        Instance = this;
-    }
+    private List<GameObject> obstaclePool;
+    private float timeSinceLastSpawn;
 
     void Start()
     {
+        obstaclePool = new List<GameObject>();
+
         for (int i = 0; i < poolSize; i++)
         {
-            GameObject obj = Instantiate(prefab);
-            obj.SetActive(false);
-            pool.Enqueue(obj);
+            GameObject obstacle = Instantiate(obstaclePrefab, transform);
+            obstacle.SetActive(false);
+            obstaclePool.Add(obstacle);
         }
     }
 
-    public GameObject GetObject()
+    void Update()
     {
-        if (pool.Count > 0)
+        timeSinceLastSpawn += Time.deltaTime;
+
+        if (timeSinceLastSpawn >= spawnRate)
         {
-            GameObject obj = pool.Dequeue();
-            obj.SetActive(true);
-            return obj;
-        }
-        else
-        {
-            GameObject obj = Instantiate(prefab);
-            return obj;
+            SpawnObstacle();
+            timeSinceLastSpawn = 0f;
         }
     }
 
-    public void ReturnObject(GameObject obj)
+    void SpawnObstacle()
     {
-        obj.SetActive(false);
-        pool.Enqueue(obj);
+        GameObject obstacle = GetPooledObstacle();
+
+        if (obstacle != null)
+        {
+            float randomY = Random.Range(minY, maxY);
+            obstacle.transform.position = new Vector2(10f, randomY);
+            obstacle.SetActive(true);
+        }
+    }
+
+    GameObject GetPooledObstacle()
+    {
+        foreach (GameObject obstacle in obstaclePool)
+        {
+            if (!obstacle.activeInHierarchy)
+            {
+                return obstacle;
+            }
+        }
+        return null;
     }
 }
