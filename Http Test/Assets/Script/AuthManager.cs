@@ -6,18 +6,17 @@ using UnityEngine.Networking;
 
 public class AuthManager : MonoBehaviour
 {
-    string url = "https://sid-restapi.onrender.com"; 
-    string token; 
-    string username; 
+    string url = "https://sid-restapi.onrender.com";
+    string token;
+    string username;
 
     public TMP_InputField usernameInput;
     public TMP_InputField passwordInput;
-    public TMP_Text feedbackText;
-    public TMP_Text leaderboardText;
+    public TMP_Text feedbackText; 
 
     void Start()
     {
-        token = PlayerPrefs.GetString("token"); 
+        token = PlayerPrefs.GetString("token");
         username = PlayerPrefs.GetString("username");
 
         if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(username))
@@ -26,6 +25,8 @@ public class AuthManager : MonoBehaviour
         }
         else
         {
+            Debug.Log("Token almacenado: " + token);
+            Debug.Log("Usuario almacenado: " + username);
             StartCoroutine(GetProfile());
         }
     }
@@ -66,11 +67,16 @@ public class AuthManager : MonoBehaviour
         if (request.result == UnityWebRequest.Result.Success)
         {
             Debug.Log("Registro exitoso.");
-            StartCoroutine(LoginPost(postData)); // Autologin despuÃ©s del registro
+            feedbackText.text = "Registro exitoso, iniciando sesión...";
+            feedbackText.color = Color.green;
+
+            StartCoroutine(LoginPost(postData)); // Auto-login después de registro
         }
         else
         {
             Debug.Log("Error en registro: " + request.downloadHandler.text);
+            feedbackText.text = "Error en registro: " + request.downloadHandler.text;
+            feedbackText.color = Color.red;
         }
     }
 
@@ -96,10 +102,14 @@ public class AuthManager : MonoBehaviour
             username = response.usuario.username;
 
             Debug.Log("Login exitoso!");
+            feedbackText.text = "Inicio de sesión exitoso";
+            feedbackText.color = Color.green;
         }
         else
         {
             Debug.Log("Error en login: " + request.downloadHandler.text);
+            feedbackText.text = "Error en login: " + request.downloadHandler.text;
+            feedbackText.color = Color.red;
         }
     }
 
@@ -117,68 +127,11 @@ public class AuthManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Token invÃ¡lido, redirigiendo a login.");
-        }
-    }
-
-    // **Enviar Score a la API
-    public void UpdateScore(int score)
-    {
-        StartCoroutine(UpdateScoreCoroutine(score));
-    }
-
-    IEnumerator UpdateScoreCoroutine(int score)
-    {
-        if (string.IsNullOrEmpty(token))
-        {
-            Debug.Log("No hay usuario autenticado.");
-            yield break;
-        }
-
-        string path = "/api/scores";
-        ScoreData scoreData = new ScoreData { score = score };
-        string postData = JsonUtility.ToJson(scoreData);
-
-        UnityWebRequest request = new UnityWebRequest(url + path, "POST");
-        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(postData);
-        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        request.downloadHandler = new DownloadHandlerBuffer();
-        request.SetRequestHeader("Content-Type", "application/json");
-        request.SetRequestHeader("Authorization", "Bearer " + token);
-
-        yield return request.SendWebRequest();
-
-        if (request.result == UnityWebRequest.Result.Success)
-        {
-            Debug.Log("Puntaje guardado correctamente.");
-        }
-        else
-        {
-            Debug.Log("Error al guardar puntaje: " + request.downloadHandler.text);
-        }
-    }
-
-    // **Obtener Tabla de Scores
-    public void GetLeaderboard()
-    {
-        StartCoroutine(GetLeaderboardCoroutine());
-    }
-
-    IEnumerator GetLeaderboardCoroutine()
-    {
-        string path = "/api/leaderboard";
-        UnityWebRequest request = UnityWebRequest.Get(url + path);
-        request.SetRequestHeader("Authorization", "Bearer " + token);
-
-        yield return request.SendWebRequest();
-
-        if (request.result == UnityWebRequest.Result.Success)
-        {
-            leaderboardText.text = "Leaderboard:\n" + request.downloadHandler.text;
-        }
-        else
-        {
-            Debug.Log("Error al obtener leaderboard: " + request.downloadHandler.text);
+            Debug.Log("Token inválido, redirigiendo a login.");
+            PlayerPrefs.DeleteKey("token");
+            PlayerPrefs.DeleteKey("username");
+            feedbackText.text = "Sesión expirada, inicia sesión nuevamente";
+            feedbackText.color = Color.red;
         }
     }
 
@@ -202,11 +155,5 @@ public class AuthManager : MonoBehaviour
         public string _id;
         public string username;
         public bool estado;
-    }
-
-    [Serializable]
-    public class ScoreData
-    {
-        public int score;
     }
 }
