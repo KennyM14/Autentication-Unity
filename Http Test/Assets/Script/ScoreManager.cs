@@ -5,11 +5,14 @@ using UnityEngine.UI;
 public class ScoreManager : MonoBehaviour
 {
     public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI highScoreText; 
     private int score;
+    private int highScore; 
 
     void Start()
     {
         score = 0;
+        highScore = PlayerPrefs.GetInt("HightScore", 0); 
         UpdateScoreText();
     }
 
@@ -21,6 +24,18 @@ public class ScoreManager : MonoBehaviour
 
     void UpdateScoreText()
     {
+        if (score > highScore) 
+        {
+            highScore = score;
+            PlayerPrefs.SetInt("HighScore", highScore);
+            PlayerPrefs.Save();
+        }
         scoreText.text = "Score: " + score.ToString();
+        highScoreText.text = "High Score: " + highScore.ToString();
+    }
+
+    public int GetScore()
+    {
+        return score;
     }
 }
