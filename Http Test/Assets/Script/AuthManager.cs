@@ -12,7 +12,11 @@ public class AuthManager : MonoBehaviour
 
     public TMP_InputField usernameInput;
     public TMP_InputField passwordInput;
-    public TMP_Text feedbackText; 
+
+    public GameObject startPanel; 
+    public GameObject authPanel; 
+    public GameObject errorPanel; 
+
 
     void Start()
     {
@@ -67,16 +71,12 @@ public class AuthManager : MonoBehaviour
         if (request.result == UnityWebRequest.Result.Success)
         {
             Debug.Log("Registro exitoso.");
-            feedbackText.text = "Registro exitoso, iniciando sesión...";
-            feedbackText.color = Color.green;
-
-            StartCoroutine(LoginPost(postData)); // Auto-login después de registro
+            StartCoroutine(LoginPost(postData)); // Auto-login despuï¿½s de registro
         }
         else
         {
             Debug.Log("Error en registro: " + request.downloadHandler.text);
-            feedbackText.text = "Error en registro: " + request.downloadHandler.text;
-            feedbackText.color = Color.red;
+            ShowError(); 
         }
     }
 
@@ -102,14 +102,12 @@ public class AuthManager : MonoBehaviour
             username = response.usuario.username;
 
             Debug.Log("Login exitoso!");
-            feedbackText.text = "Inicio de sesión exitoso";
-            feedbackText.color = Color.green;
+            ShowStartPanel(); 
         }
         else
         {
             Debug.Log("Error en login: " + request.downloadHandler.text);
-            feedbackText.text = "Error en login: " + request.downloadHandler.text;
-            feedbackText.color = Color.red;
+            ShowError(); 
         }
     }
 
@@ -127,12 +125,24 @@ public class AuthManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Token inválido, redirigiendo a login.");
+            Debug.Log("Token invÃ¡lido, redirigiendo a login.");
             PlayerPrefs.DeleteKey("token");
             PlayerPrefs.DeleteKey("username");
-            feedbackText.text = "Sesión expirada, inicia sesión nuevamente";
-            feedbackText.color = Color.red;
         }
+    }
+
+    public void ShowStartPanel()
+    {
+        startPanel.SetActive(true);
+        authPanel.SetActive(false);
+        errorPanel.SetActive(false);
+    }
+
+    public void ShowError()
+    {
+        startPanel.SetActive(false);
+        authPanel.SetActive(true);
+        errorPanel.SetActive(true);
     }
 
     [Serializable]
