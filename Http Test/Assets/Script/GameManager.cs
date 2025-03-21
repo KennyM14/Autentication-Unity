@@ -46,17 +46,24 @@ public class GameManager : MonoBehaviour
             gameOverPanel.SetActive(true); 
 
             ScoreManager scoreManager = FindObjectOfType<ScoreManager>();
-            int finalScore = scoreManager.GetScore();
-            int highScore = PlayerPrefs.GetInt("HighScore", 0);
-
-            if (finalScore > highScore)
+            if(scoreManager != null)
             {
-                highScore = finalScore;
-                PlayerPrefs.SetInt("HighScore", highScore);
-                PlayerPrefs.Save();
-            }
+                int finalScore = scoreManager.GetScore();
+                int highScore = PlayerPrefs.GetInt("HighScore", 0);
 
-            gameOverHighScoreText.text = "High Score: " + highScore.ToString();
+                if (finalScore > highScore)
+                {
+                    highScore = finalScore;
+                    PlayerPrefs.SetInt("HighScore", highScore);
+                    PlayerPrefs.Save();
+                }
+                gameOverHighScoreText.text = "High Score: " + highScore.ToString();
+                scoreManager.OnPlayerLose();
+            }
+            else
+            {
+                Debug.LogError("ScoreManager no encontrado.");
+            }
         }
     }
 

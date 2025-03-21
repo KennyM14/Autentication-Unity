@@ -31,7 +31,12 @@ public class ScoreManager : MonoBehaviour
             PlayerPrefs.SetInt("HighScore", highScore);
             PlayerPrefs.Save();
         }
+        scoreText.text = "Score: " + score.ToString();
+        highScoreText.text = "High Score: " + highScore.ToString();
+    }
 
+    public void OnPlayerLose()
+    {
         if (AuthManager.Instance != null)
         {
             AuthManager.Instance.SaveAndSendScore(highScore);
@@ -40,8 +45,6 @@ public class ScoreManager : MonoBehaviour
         {
             Debug.LogError("AuthManager no encontrado.");
         }
-        scoreText.text = "Score: " + score.ToString();
-        highScoreText.text = "High Score: " + highScore.ToString();
     }
 
     public int GetScore()
