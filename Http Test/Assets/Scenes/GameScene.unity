@@ -1539,6 +1539,7 @@ MonoBehaviour:
   isGameOver: 0
   gameOverPanel: {fileID: 667121287}
   gameOverHighScoreText: {fileID: 759197060}
+  authManagerPrefab: {fileID: 1399593251419946003, guid: 4135ff7f020c99f4eb50edc17921879a, type: 3}
 --- !u!4 &1369969383
 Transform:
   m_ObjectHideFlags: 0

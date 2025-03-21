@@ -9,7 +9,7 @@ public class GameManager : MonoBehaviour
     public bool isGameOver = false;
     public GameObject gameOverPanel;
     public TextMeshProUGUI gameOverHighScoreText;
-
+    public GameObject authManagerPrefab;
     void Awake()
     {
         if (Instance == null)
@@ -19,6 +19,20 @@ public class GameManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    private void Start()
+    {
+        if (FindObjectOfType<AuthManager>() == null)
+        {
+            // Instanciar el AuthManager si no existe
+            Instantiate(authManagerPrefab);
+            Debug.Log("AuthManager instanciado.");
+        }
+        else
+        {
+            Debug.Log("AuthManager ya existe en la escena.");
         }
     }
 

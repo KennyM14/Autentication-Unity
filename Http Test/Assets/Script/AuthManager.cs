@@ -1,11 +1,15 @@
 using System;
 using System.Collections;
+using System.Collections.Generic; 
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.UI; 
 
 public class AuthManager : MonoBehaviour
 {
+    public static AuthManager Instance; 
     string url = "https://sid-restapi.onrender.com";
     string token;
     string username;
@@ -16,7 +20,25 @@ public class AuthManager : MonoBehaviour
     public GameObject startPanel; 
     public GameObject authPanel; 
     public GameObject errorPanel; 
+    public TextMeshProUGUI errorText;
 
+    public GameObject leaderboardPanel;
+    public TextMeshProUGUI[] usernamesText;
+    public TextMeshProUGUI[] scoresText;
+    public Button leaderboardButton;
+
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this; 
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     void Start()
     {
@@ -26,6 +48,7 @@ public class AuthManager : MonoBehaviour
         if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(username))
         {
             Debug.Log("No hay token almacenado.");
+            ShowAuthPanel();
         }
         else
         {
@@ -33,6 +56,20 @@ public class AuthManager : MonoBehaviour
             Debug.Log("Usuario almacenado: " + username);
             StartCoroutine(GetProfile());
         }
+
+         if (leaderboardButton != null)
+        {
+            leaderboardButton.onClick.AddListener(OnLeaderboardButtonClicked);
+        }
+        else
+        {
+            Debug.LogError("Botón del leaderboard no asignado en el Inspector.");
+        }
+    }
+
+    private void OnLeaderboardButtonClicked()
+    {
+        ShowLeaderboard(); 
     }
 
     public void Login()
@@ -71,12 +108,29 @@ public class AuthManager : MonoBehaviour
         if (request.result == UnityWebRequest.Result.Success)
         {
             Debug.Log("Registro exitoso.");
-            StartCoroutine(LoginPost(postData)); // Auto-login despu�s de registro
+            ShowMessage("Registro exitoso. Iniciando sesión...");
+            StartCoroutine(LoginPost(postData)); 
         }
         else
         {
-            Debug.Log("Error en registro: " + request.downloadHandler.text);
-            ShowError(); 
+            string errorMessage = "Error en registro: ";
+            switch (request.responseCode)
+            {
+                case 400:
+                    errorMessage += "Datos inválidos o faltantes.";
+                    break;
+                case 409:
+                    errorMessage += "El nombre de usuario ya está en uso.";
+                    break;
+                case 500:
+                    errorMessage += "Error interno del servidor.";
+                    break;
+                default:
+                    errorMessage += "Error desconocido.";
+                    break;
+            }
+            Debug.LogError(errorMessage);
+            ShowError(errorMessage); 
         }
     }
 
@@ -106,8 +160,24 @@ public class AuthManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Error en login: " + request.downloadHandler.text);
-            ShowError(); 
+            string errorMessage = "Error en login: ";
+            switch (request.responseCode)
+            {
+                case 400:
+                    errorMessage += "Datos inválidos o faltantes.";
+                    break;
+                case 401:
+                    errorMessage += "Usuario o contraseña incorrectos.";
+                    break;
+                case 500:
+                    errorMessage += "Error interno del servidor.";
+                    break;
+                default:
+                    errorMessage += "Error desconocido.";
+                    break;
+            }
+            Debug.LogError(errorMessage);
+            ShowError(errorMessage); 
         }
     }
 
@@ -125,9 +195,98 @@ public class AuthManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Token inválido, redirigiendo a login.");
+            string errorMessage = "Token inválido, redirigiendo a login.";
+            Debug.LogError(errorMessage);
+            ShowError(errorMessage);
             PlayerPrefs.DeleteKey("token");
             PlayerPrefs.DeleteKey("username");
+        }
+    }
+
+    public void SaveAndSendScore(int score)
+    {
+        PlayerPrefs.SetInt("PlayerScore", score);
+        PlayerPrefs.Save();
+
+        // Crear el objeto con los datos del score
+        UserModel user = new UserModel
+        {
+            username = PlayerPrefs.GetString("username"),
+            data = new DataUser { score = score }
+        };
+
+        // Convertir a JSON
+        string jsonData = JsonUtility.ToJson(user);
+
+        // Enviar el score a la API
+        StartCoroutine(SendScoreToAPI(jsonData));
+    }
+
+    private IEnumerator SendScoreToAPI(string jsonData)
+    {
+        string path = "/api/usuarios";
+        UnityWebRequest request = UnityWebRequest.Put(url + path, jsonData);
+        request.method = "PATCH";
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("x-token", PlayerPrefs.GetString("token")); // Enviar el token de autenticación
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Score enviado correctamente a la API.");
+        }
+        else
+        {
+            Debug.LogError("Error al enviar el score: " + request.error);
+        }
+    }
+
+    public void ShowLeaderboard()
+    {
+        leaderboardPanel.SetActive(true);
+        StartCoroutine(GetLeaderboard());
+    }
+
+    private IEnumerator GetLeaderboard()
+    {
+        string path = "/api/usuarios";
+        UnityWebRequest request = UnityWebRequest.Get(url + path);
+        request.SetRequestHeader("x-token", PlayerPrefs.GetString("token")); // Enviar el token de autenticación
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            // Deserializar la respuesta de la API
+            UsuariosResponse data = JsonUtility.FromJson<UsuariosResponse>(request.downloadHandler.text);
+
+            // Ordenar los usuarios por score (de mayor a menor) y tomar los top 5
+            var topUsers = data.usuarios.OrderByDescending(user => user.data.score).Take(5).ToArray();
+
+            // Mostrar los top 5 scores en el panel del scoreboard
+            DisplayLeaderboard(topUsers);
+        }
+        else
+        {
+            Debug.LogError("Error al obtener el leaderboard: " + request.error);
+        }
+    }
+
+    private void DisplayLeaderboard(UserModel[] topUsers)
+    {
+        // Mostrar los nombres y scores en los TextMeshProUGUI correspondientes
+        for (int i = 0; i < topUsers.Length; i++)
+        {
+            usernamesText[i].text = topUsers[i].username;
+            scoresText[i].text = topUsers[i].data.score.ToString();
+        }
+
+        // Si hay menos de 5 usuarios, limpiar los campos restantes
+        for (int i = topUsers.Length; i < 5; i++)
+        {
+            usernamesText[i].text = "";
+            scoresText[i].text = "";
         }
     }
 
@@ -138,11 +297,32 @@ public class AuthManager : MonoBehaviour
         errorPanel.SetActive(false);
     }
 
-    public void ShowError()
+    public void ShowAuthPanel()
     {
         startPanel.SetActive(false);
         authPanel.SetActive(true);
+        errorPanel.SetActive(false);
+    }
+
+    public void ShowError(string message)
+    {
+        errorText.text = message; // Mostrar el mensaje de error
         errorPanel.SetActive(true);
+        authPanel.SetActive(true);
+        startPanel.SetActive(false);
+    }
+
+    public void ShowMessage(string message)
+    {
+        errorText.text = message; // Mostrar un mensaje informativo
+        errorPanel.SetActive(true);
+        StartCoroutine(HideMessageAfterDelay(3f)); // Ocultar el mensaje después de 3 segundos
+    }
+
+    private IEnumerator HideMessageAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        errorPanel.SetActive(false);
     }
 
     [Serializable]
@@ -164,6 +344,19 @@ public class AuthManager : MonoBehaviour
     {
         public string _id;
         public string username;
-        public bool estado;
+        public DataUser data;
+        public string estado;
+    }
+
+    [Serializable]
+    public class DataUser
+    {
+        public int score;
+    }
+
+    [Serializable]
+    public class UsuariosResponse
+    {
+        public List<UserModel> usuarios;
     }
 }

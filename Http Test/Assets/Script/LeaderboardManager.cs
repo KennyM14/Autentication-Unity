@@ -27,7 +27,14 @@ public class LeaderboardManager : MonoBehaviour
     void Start()
     {
         Token = PlayerPrefs.GetString("token");
-        StartCoroutine(GetLeaderboard());
+        if (!string.IsNullOrEmpty(Token))
+        {
+            StartCoroutine(GetLeaderboard());
+        }
+        else
+        {
+            Debug.LogWarning("No se encontró un token válido.");
+        }
     }
 
     IEnumerator GetLeaderboard()
@@ -42,12 +49,19 @@ public class LeaderboardManager : MonoBehaviour
             string jsonResponse = request.downloadHandler.text;
             UserList userList = JsonUtility.FromJson<UserList>("{\"usuarios\":" + jsonResponse + "}");
 
-            List<UserModel> sortedUsers = userList.usuarios.OrderByDescending(u => u.score).Take(5).ToList();
-            DisplayLeaderboard(sortedUsers);
+            if (userList != null && userList.usuarios != null)
+            {
+                List<UserModel> sortedUsers = userList.usuarios.OrderByDescending(u => u.score).Take(5).ToList();
+                DisplayLeaderboard(sortedUsers);
+            }
+            else
+            {
+                Debug.LogError("Error al deserializar los datos del leaderboard.");
+            }
         }
         else
         {
-            Debug.LogError("Error al obtener datos: " + request.error);
+            Debug.LogError("Error al obtener datos del leaderboard: " + request.error);
         }
     }
 
@@ -62,22 +76,9 @@ public class LeaderboardManager : MonoBehaviour
             }
             else
             {
-                nombreTexts[i].text = "";
-                scoreTexts[i].text = "";
+                nombreTexts[i].text = "-";
+                scoreTexts[i].text = "-";
             }
         }
     }
-}
-
-[System.Serializable]
-public class UserModel
-{
-    public string username;
-    public int score;
-}
-
-[System.Serializable]
-public class UserList
-{
-    public List<UserModel> usuarios;
 }
