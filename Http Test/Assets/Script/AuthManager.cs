@@ -20,8 +20,6 @@ public class AuthManager : MonoBehaviour
     public GameObject startPanel; 
     public GameObject authPanel; 
     public GameObject errorPanel; 
-    public TextMeshProUGUI errorText;
-
     public GameObject leaderboardPanel;
     public TextMeshProUGUI[] usernamesText;
     public TextMeshProUGUI[] scoresText;
@@ -108,7 +106,6 @@ public class AuthManager : MonoBehaviour
         if (request.result == UnityWebRequest.Result.Success)
         {
             Debug.Log("Registro exitoso.");
-            ShowMessage("Registro exitoso. Iniciando sesión...");
             StartCoroutine(LoginPost(postData)); 
         }
         else
@@ -130,7 +127,7 @@ public class AuthManager : MonoBehaviour
                     break;
             }
             Debug.LogError(errorMessage);
-            ShowError(errorMessage); 
+            ShowError(); 
         }
     }
 
@@ -149,12 +146,10 @@ public class AuthManager : MonoBehaviour
         {
             string json = request.downloadHandler.text;
             AuthResponse response = JsonUtility.FromJson<AuthResponse>(json);
-
             PlayerPrefs.SetString("token", response.token);
             PlayerPrefs.SetString("username", response.usuario.username);
             token = response.token;
             username = response.usuario.username;
-
             Debug.Log("Login exitoso!");
             ShowStartPanel(); 
         }
@@ -177,7 +172,7 @@ public class AuthManager : MonoBehaviour
                     break;
             }
             Debug.LogError(errorMessage);
-            ShowError(errorMessage); 
+            ShowError(); 
         }
     }
 
@@ -197,7 +192,7 @@ public class AuthManager : MonoBehaviour
         {
             string errorMessage = "Token inválido, redirigiendo a login.";
             Debug.LogError(errorMessage);
-            ShowError(errorMessage);
+            ShowError();
             PlayerPrefs.DeleteKey("token");
             PlayerPrefs.DeleteKey("username");
         }
@@ -208,7 +203,6 @@ public class AuthManager : MonoBehaviour
         PlayerPrefs.SetInt("PlayerScore", score);
         PlayerPrefs.Save();
 
-        // Crear el objeto con los datos del score
         UserModel user = new UserModel
         {
             username = PlayerPrefs.GetString("username"),
@@ -304,25 +298,11 @@ public class AuthManager : MonoBehaviour
         errorPanel.SetActive(false);
     }
 
-    public void ShowError(string message)
+    public void ShowError()
     {
-        errorText.text = message; // Mostrar el mensaje de error
         errorPanel.SetActive(true);
         authPanel.SetActive(true);
         startPanel.SetActive(false);
-    }
-
-    public void ShowMessage(string message)
-    {
-        errorText.text = message; // Mostrar un mensaje informativo
-        errorPanel.SetActive(true);
-        StartCoroutine(HideMessageAfterDelay(3f)); // Ocultar el mensaje después de 3 segundos
-    }
-
-    private IEnumerator HideMessageAfterDelay(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        errorPanel.SetActive(false);
     }
 
     [Serializable]
